@@ -1,0 +1,23 @@
+name: Indirect pom.xml Dependency (TrivyCli)
+on:
+  workflow_dispatch:
+
+jobs:
+  trivy-sca-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Package and install dummy dependency
+        run: |-
+          (cd dummy-dependency && mvn clean install)
+          cat ~/.m2/repository/com/example/DummyMavenProject/1.0-SNAPSHOT/DummyMavenProject-1.0-SNAPSHOT.pom
+
+      - name: Perform Trivy SCA Scan on repository
+        run: |-
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt update && sudo apt install trivy
+          trivy fs ./indirect-dependency
+

@@ -1,0 +1,17 @@
+name: Direct pom.xml Dependency (TrivyAction)
+on:
+  workflow_dispatch:
+
+jobs:
+  trivy-sca-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Perform Trivy SCA Scan on repository
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scanners: vuln
+          scan-ref: "./direct-dependency"

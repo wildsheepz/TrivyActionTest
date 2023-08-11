@@ -1,0 +1,18 @@
+name: Indirect pom.xml Dependency, broken dependency link (TrivyCli)
+on:
+  workflow_dispatch:
+
+jobs:
+  trivy-sca-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Perform Trivy SCA Scan on repository
+        run: |-
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt update && sudo apt install trivy
+          trivy fs ./indirect-dependency
+

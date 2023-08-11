@@ -1,0 +1,23 @@
+name: Indirect pom.xml Dependency (TrivyAction)
+on:
+  workflow_dispatch:
+
+jobs:
+  trivy-sca-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Package and install dummy dependency
+        run: |-
+          (cd dummy-dependency && mvn clean install)
+          cat ~/.m2/repository/com/example/DummyMavenProject/1.0-SNAPSHOT/DummyMavenProject-1.0-SNAPSHOT.pom
+
+      - name: Perform Trivy SCA Scan on repository
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scanners: vuln
+          scan-ref: "./indirect-dependency"
+

@@ -1,0 +1,90 @@
+name: Direct pom.xml Dependency, broken repo access (TrivyCli)
+on:
+  workflow_dispatch:
+
+jobs:
+  trivy-sca-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+          
+      - name: Setup Broken Maven Profile
+        run: |-
+          mkdir -p ~/.m2
+          cat << 'END' > ~/.m2/settings.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 http://maven.apache.org/xsd/settings-1.2.0.xsd" xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <servers>
+              <server>
+                <username></username>
+                <password></password>
+                <id>central</id>
+              </server>
+              <server>
+                <username></username>
+                <password></password>
+                <id>snapshots</id>
+              </server>
+            </servers>
+            <profiles>
+              <profile>
+                <repositories>
+                  <repository>
+                    <snapshots>
+                      <enabled>false</enabled>
+                    </snapshots>
+                    <id>central</id>
+                    <name>maven-release</name>
+                    <url>https://xyz/artifactory/maven-release</url>
+                  </repository>
+                  <repository>
+                    <snapshots />
+                    <id>snapshots</id>
+                    <name>maven-dev</name>
+                    <url>https://xyz/artifactory/maven-dev</url>
+                  </repository>
+                </repositories>
+                <pluginRepositories>
+                  <pluginRepository>
+                    <snapshots>
+                      <enabled>false</enabled>
+                    </snapshots>
+                    <id>central</id>
+                    <name>maven-release</name>
+                    <url>https://xyz/artifactory/maven-release</url>
+                  </pluginRepository>
+                  <pluginRepository>
+                    <snapshots />
+                    <id>snapshots</id>
+                    <name>maven-dev</name>
+                    <url>https://xyz/artifactory/maven-dev</url>
+                  </pluginRepository>
+                </pluginRepositories>
+                <id>artifactory</id>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>artifactory</activeProfile>
+            </activeProfiles>
+          </settings>
+          END
+
+
+      - name: nonsense maven-settings
+        uses: s4u/maven-settings-action@v2
+        with:
+          servers: '[{"id": "github", "username": "dummy", "password": "broken"}]'
+          githubServer: false
+
+
+
+      - name: Perform Trivy SCA Scan on repository
+        run: |-
+          cat ~/.m2/settings.xml
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt update && sudo apt install trivy
+          trivy fs ./direct-dependency
+
